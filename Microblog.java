@@ -14,6 +14,7 @@ public class Microblog implements BlogRef {
     private int registry_port;
     private RegistryProxy registry;
     private String name;
+    private int last_id;
 
     private TreeSet<Message> messages;
 
@@ -36,6 +37,7 @@ public class Microblog implements BlogRef {
         this.name = args[2];
 
         this.messages = new TreeSet<Message>();
+        this.last_id = 0;
 
         // Distributed setup!
         try {
@@ -74,10 +76,23 @@ public class Microblog implements BlogRef {
 
 
     public Message addMessage(String content, long timestamp) {
-        int id = messages.size() + 1;
+        int id = last_id + 1;
+        last_id ++;
         Message message = new Message(id, timestamp, this.name, content);
         this.messages.add(message);
         return message;
+    }
+
+    public Message removeMessage(int id) {
+        Message to_remove = null;
+        for (Message message : messages) {
+            if (message.getId() == id) {
+                to_remove = message;
+                break;
+            }
+        }
+        messages.remove(to_remove);
+        return to_remove;
     }
 
 }

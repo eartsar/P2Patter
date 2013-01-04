@@ -39,4 +39,9 @@ public class Message implements Comparable<Message>, Serializable {
         ret = ret + "\n" + content;
         return ret;
     }
+
+    public int getId() { return this.id; }
+    public long getTime() { return this.time; }
+    public String getAuthor() { return this.author; }
+    public String getContent() { return this.content; }
 }
