@@ -1,0 +1,3 @@
+#!/bin/bash
+
+java -classpath "cscl20121228.jar" Start edu.rit.ds.registry.RegistryServer localhost 5555
