@@ -5,6 +5,7 @@ import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.util.Date;
 import java.text.SimpleDateFormat;
+import java.util.TreeSet;
 
 
 public class Microblog implements BlogRef {
@@ -13,6 +14,8 @@ public class Microblog implements BlogRef {
     private int registry_port;
     private RegistryProxy registry;
     private String name;
+
+    private TreeSet<Message> messages;
 
     public Microblog(String[] args) {
         if (args.length < 3) {
@@ -32,6 +35,9 @@ public class Microblog implements BlogRef {
         this.registry_host = args[0];
         this.name = args[2];
 
+        this.messages = new TreeSet<Message>();
+
+        // Distributed setup!
         try {
             this.registry_port = Integer.parseInt(args[1]);
         } catch( Exception e ) {
@@ -62,45 +68,16 @@ public class Microblog implements BlogRef {
         }
         catch (RemoteException e) {
             // TODO: Handle other remote exceptions on startup
+            e.printStackTrace();
         }
-
     }
 
 
-    private class Message implements Comparable<Message> {
-        private int id;
-        private long time;
-        private String author;
-        private String content;
-
-        public Message(int id, long time, String author, String content) {
-            this.id = id;
-            this.time = time;
-            this.author = author;
-            this.content = content;
-        }
-
-        public int compareTo(Message other) {
-            if (this.time < other.time) { return -1; }
-            else if (this.time > other.time) { return 1; }
-            else if (this.author.compareTo(other.author) != 0) {
-                return this.author.compareTo(other.author); 
-            }
-            else if (this.id < other.id) { return -1; }
-            else if (this.id > other.id) { return 1; }
-            else { return 1; }
-        }
-
-        public String toString() {
-            Date date = new Date(time);
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd H:mm:ss");
-            String timestamp = formatter.format(date);
-            String ret;
-            ret = "--------------------------------------------------------------------------------";
-            ret = ret + "\n" + author + " -- " + "Message " + id + " -- " + timestamp;
-            ret = ret + "\n" + content;
-            return ret;
-        }
+    public Message addMessage(String content, long timestamp) {
+        int id = messages.size() + 1;
+        Message message = new Message(id, timestamp, this.name, content);
+        this.messages.add(message);
+        return message;
     }
 
 }
