@@ -1,5 +1,8 @@
 import edu.rit.ds.registry.RegistryProxy;
 import edu.rit.ds.registry.AlreadyBoundException;
+import edu.rit.ds.Lease;
+import edu.rit.ds.RemoteEventListener;
+import edu.rit.ds.RemoteEventGenerator;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
@@ -10,24 +13,30 @@ import java.util.TreeSet;
 
 public class Microblog implements BlogRef {
 
+    // registry variables
     private String registry_host;
     private int registry_port;
     private RegistryProxy registry;
+
+    // blog fields
     private String name;
     private int last_id;
-
     private TreeSet<Message> messages;
+
+    // event objects
+    private RemoteEventGenerator<BlogEvent> eventGenerator;
+
 
     public Microblog(String[] args) {
         if (args.length < 3) {
             throw new IllegalArgumentException(
-                "Error - Too few arguments given.\n" + 
+                "Microblog(): Too few arguments given.\n" + 
                 "Usage: java Start Microblog <host> <port> <name>"
             );
         }
         else if (args.length > 3) {
             throw new IllegalArgumentException(
-                "Error - Too few arguments given.\n" + 
+                "Microblog(): Too many arguments given.\n" + 
                 "Usage: java Start Microblog <host> <port> <name>"
             );
         }
@@ -44,12 +53,14 @@ public class Microblog implements BlogRef {
             this.registry_port = Integer.parseInt(args[1]);
         } catch( Exception e ) {
             throw new IllegalArgumentException(
-                "Error - Port must be an integer.\n" + 
+                "Microblog(): Port must be an integer.\n" + 
                 "Usage: java Start Microblog <host> <port> <name>"
             ); 
         }
 
         try {
+            eventGenerator = new RemoteEventGenerator<BlogEvent>();
+
             // Get a proxy for the Registry Server
             registry = new RegistryProxy(registry_host, registry_port);
 
@@ -65,11 +76,16 @@ public class Microblog implements BlogRef {
             }
             catch (NoSuchObjectException e2) {}
             throw new IllegalArgumentException(
-                "Error - MicroBlog with name " + this.name + " already exists."
+                "Microblog(): Microblog with name " + this.name + " already exists."
             );
         }
         catch (RemoteException e) {
-            // TODO: Handle other remote exceptions on startup
+            throw new IllegalArgumentException(
+                "Microblog(): No Registry Server is running at specified host and port."
+            );
+        }
+        catch (Exception e) {
+            System.err.println("Microblog(): An error has occurred.");
             e.printStackTrace();
         }
     }
@@ -83,6 +99,7 @@ public class Microblog implements BlogRef {
         return message;
     }
 
+
     public Message removeMessage(int id) {
         Message to_remove = null;
         for (Message message : messages) {
@@ -93,6 +110,11 @@ public class Microblog implements BlogRef {
         }
         messages.remove(to_remove);
         return to_remove;
+    }
+
+
+    public Lease addListener(RemoteEventListener<BlogEvent> listener) throws RemoteException {
+        return null;
     }
 
 }
