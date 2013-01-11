@@ -4,6 +4,7 @@ import edu.rit.ds.registry.RegistryEvent;
 import edu.rit.ds.registry.RegistryEventFilter;
 import edu.rit.ds.registry.NotBoundException;
 import edu.rit.ds.RemoteEventListener;
+import edu.rit.ds.Lease;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -71,6 +72,7 @@ public class Follow {
                     System.out.println(event.message);
                 }
             };
+            UnicastRemoteObject.exportObject(blogListener, 0);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -90,7 +92,7 @@ public class Follow {
         for (String name : followNames) {
             try {
                 BlogRef blog = (BlogRef)registry.lookup(name);
-                
+
                 for (Message m : blog.getLatestMessages()) {
                     System.out.println(m);
                 }

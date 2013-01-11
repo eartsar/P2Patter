@@ -74,7 +74,8 @@ public class Microblog implements BlogRef {
             try {
                 UnicastRemoteObject.unexportObject(this, true);
             }
-            catch (NoSuchObjectException e2) {}
+            catch (NoSuchObjectException e2) {
+            }
             throw new IllegalArgumentException(
                 "Microblog(): Microblog with name " + this.name + " already exists."
             );
@@ -98,6 +99,9 @@ public class Microblog implements BlogRef {
         last_id ++;
         Message message = new Message(id, now, this.name, content);
         this.messages.add(message);
+
+        eventGenerator.reportEvent(new BlogEvent(this.name, message));
+
         return message;
     }
 
@@ -111,21 +115,26 @@ public class Microblog implements BlogRef {
             }
         }
         messages.remove(to_remove);
+
+        eventGenerator.reportEvent(new BlogEvent(this.name, to_remove));
+
         return to_remove;
     }
 
 
     public TreeSet<Message> getLatestMessages() {
         TreeSet<Message> latest = new TreeSet<Message>();
+        TreeSet<Message> temp = new TreeSet<Message>();
+        temp.addAll(messages);
+
         if (messages.size() == 0) {
         }
         else if(messages.size() == 1) {
-            latest.add( messages.last() );
+            latest.add( temp.pollLast() );
         }
         else {
-            Message m = messages.last();
-            latest.add(m);
-            latest.add(messages.lower(m));
+            latest.add( temp.pollLast() );
+            latest.add( temp.pollLast() );
         }
         
         return latest;
@@ -133,7 +142,7 @@ public class Microblog implements BlogRef {
 
 
     public Lease addListener(RemoteEventListener<BlogEvent> listener) throws RemoteException {
-        return null;
+        return eventGenerator.addListener(listener);
     }
 
 }

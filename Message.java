@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Message implements Comparable<Message>, Serializable {
     // Necessary for serialization
-    private static final long serialVersionUID = 729386723967029L;
+    //private static final long serialVersionUID = 729386723967029L;
 
     private int id;
     private long time;
