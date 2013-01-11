@@ -1,5 +1,6 @@
 import edu.rit.ds.registry.RegistryProxy;
 
+
 public class AddMessage {
 
     public static void main(String[] args) {
@@ -16,8 +17,7 @@ public class AddMessage {
 
             BlogRef blog = (BlogRef)registry.lookup(name);
             
-            long now = System.currentTimeMillis();
-            Message message = blog.addMessage(content, now);
+            Message message = blog.addMessage(content);
             System.out.println(message);
             
         }

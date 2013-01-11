@@ -91,10 +91,12 @@ public class Microblog implements BlogRef {
     }
 
 
-    public Message addMessage(String content, long timestamp) {
+    // TODO: Generate the timestamp here, not being given
+    public Message addMessage(String content) {
+        long now = System.currentTimeMillis();
         int id = last_id + 1;
         last_id ++;
-        Message message = new Message(id, timestamp, this.name, content);
+        Message message = new Message(id, now, this.name, content);
         this.messages.add(message);
         return message;
     }
@@ -110,6 +112,23 @@ public class Microblog implements BlogRef {
         }
         messages.remove(to_remove);
         return to_remove;
+    }
+
+
+    public TreeSet<Message> getLatestMessages() {
+        TreeSet<Message> latest = new TreeSet<Message>();
+        if (messages.size() == 0) {
+        }
+        else if(messages.size() == 1) {
+            latest.add( messages.last() );
+        }
+        else {
+            Message m = messages.last();
+            latest.add(m);
+            latest.add(messages.lower(m));
+        }
+        
+        return latest;
     }
 
 
