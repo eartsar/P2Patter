@@ -5,6 +5,7 @@ import edu.rit.ds.registry.RegistryEventFilter;
 import edu.rit.ds.registry.NotBoundException;
 import edu.rit.ds.RemoteEventListener;
 import edu.rit.ds.Lease;
+import edu.rit.ds.LeaseListener;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -30,8 +31,8 @@ public class Follow {
 
         String host = args[0];
         int port = Integer.parseInt(args[1]);
-        ArrayList<String> followNames = new ArrayList<String>();
-        HashSet<String> connectedNames = new HashSet<String>();
+        followNames = new LinkedList<String>();
+        connectedNames = new HashSet<String>();
 
         for (int i = 2; i < args.length; i++) {
             followNames.add(args[i]);
@@ -81,7 +82,7 @@ public class Follow {
 
         // Get notified when a new blog is bound
         try {
-            registryFilter = new RegistryEventFilter().reportType("Blog").reportBound();
+            registryFilter = new RegistryEventFilter().reportType("Microblog").reportBound();
             registry.addEventListener(registryListener, registryFilter);
         }
         catch (Exception e) {
@@ -97,7 +98,8 @@ public class Follow {
                     System.out.println(m);
                 }
 
-                blog.addListener(blogListener);
+                Lease lease = blog.addListener(blogListener);
+                lease.setListener(new LeaseWatcher(name));
                 connectedNames.add(name);
             }
             catch (NotBoundException e) {
@@ -110,15 +112,22 @@ public class Follow {
 
 
     private static void listenToBlog( String blogName ) {
+        System.out.println("NEW CONNETION: " + blogName);
         // Check to see if we're supposed to follow, and haven't already seen the connection
-        // if so, print the messages, and add the listener
+        //   If so, print the latest messages and establish the listener
+        // If we are following, but the connection was already established...
+        //   Just re-establish the listener silently
         try {
-            if (followNames.contains(blogName) && !connectedNames.contains(blogName)) {
+            if (followNames.contains(blogName)) {
                 BlogRef blog = (BlogRef)registry.lookup(blogName);
-                blog.addListener(blogListener);
-
-                for (Message m : blog.getLatestMessages()) {
-                    System.out.println(m);
+                Lease lease = blog.addListener(blogListener);
+                lease.setListener(new LeaseWatcher(blogName));
+                
+                if(!connectedNames.contains(blogName)) {
+                    for (Message m : blog.getLatestMessages()) {
+                        System.out.println(m);
+                    }
+                    connectedNames.add(blogName);
                 }
             }
         }

@@ -9,8 +9,16 @@ import java.rmi.RemoteException;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.TreeSet;
+import java.util.Iterator;
 
 
+/**
+ * A distributed microblog object for the P2Patter project.
+ * Usage: java Start Microblog <host> <port> <name>
+ * 
+ * @author Eitan Romanoff
+ * @date   1/13/2013
+ */
 public class Microblog implements BlogRef {
 
     // registry variables
@@ -27,6 +35,11 @@ public class Microblog implements BlogRef {
     private RemoteEventGenerator<BlogEvent> eventGenerator;
 
 
+    /**
+     * Constructor for the microblog object. Must be run with the Start program
+     *
+     * @param args  A list of arguments as a string. See above for usage.
+     */
     public Microblog(String[] args) {
         if (args.length < 3) {
             throw new IllegalArgumentException(
@@ -92,7 +105,12 @@ public class Microblog implements BlogRef {
     }
 
 
-    // TODO: Generate the timestamp here, not being given
+    /**
+     * Adds a message to the blog.
+     *
+     * @param content   The content of the message as a string.
+     * @return message  The message that was added into the blog
+     */
     public Message addMessage(String content) {
         long now = System.currentTimeMillis();
         int id = last_id + 1;
@@ -106,22 +124,32 @@ public class Microblog implements BlogRef {
     }
 
 
+    /**
+     * Removes a message from the blog by id
+     *
+     * @param id        The id value of the message to remove from the blog.
+     * @return message  The message that was removed from the blog
+     */
     public Message removeMessage(int id) {
-        Message to_remove = null;
-        for (Message message : messages) {
+        Iterator<Message> iter = messages.iterator();
+
+        while( iter.hasNext() ) {
+            Message message = iter.next();
             if (message.getId() == id) {
-                to_remove = message;
-                break;
+                iter.remove();
             }
+            return message;
         }
-        messages.remove(to_remove);
-
-        eventGenerator.reportEvent(new BlogEvent(this.name, to_remove));
-
-        return to_remove;
+        
+        return null;
     }
 
 
+    /**
+     * Gets the latest (up to 2) messages from the blog.
+     *
+     * @return latest  A treeset containing up to the latest two messages in the blog
+     */
     public TreeSet<Message> getLatestMessages() {
         TreeSet<Message> latest = new TreeSet<Message>();
         TreeSet<Message> temp = new TreeSet<Message>();
@@ -141,8 +169,15 @@ public class Microblog implements BlogRef {
     }
 
 
+    /**
+     * Adds a lease listener to this blog. Leases expire after 20 seconds.
+     *
+     * @param listener          The lease listener
+     * @return lease            The initial lease
+     * @throws RemoteException  thrown if the event generator throws an exception
+     */
     public Lease addListener(RemoteEventListener<BlogEvent> listener) throws RemoteException {
-        return eventGenerator.addListener(listener);
+        return eventGenerator.addListener(listener, 20000);
     }
 
 }
