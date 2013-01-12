@@ -50,7 +50,7 @@ public class Message implements Comparable<Message>, Serializable {
         }
         else if (this.id < other.id) { return -1; }
         else if (this.id > other.id) { return 1; }
-        else { return 1; }
+        else { return 0; }
     }
 
 

@@ -8,11 +8,20 @@ import edu.rit.ds.Lease;
 import edu.rit.ds.LeaseListener;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
+import java.rmi.ConnectException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.HashSet;
+import java.util.Collections;
 
 
+/**
+ * A client program that follows blogs
+ * Usage: java AddMessage <host> <port> <blog1> [blog2 blog3...]
+ * 
+ * @author Eitan Romanoff
+ * @date   1/13/2013
+ */
 public class Follow {
 
     private static RemoteEventListener<BlogEvent> blogListener;
@@ -22,15 +31,34 @@ public class Follow {
     private static LinkedList<String> followNames;
     private static HashSet<String> connectedNames;
 
+    /**
+     * The main method. Usage: java AddMessage <host> <port> <blog1> [blog2 blog3...]
+     *   host -    the hostname of the registry server
+     *   port -    the port that the registry server is listening in on
+     *   blog* -    the name of the blog owner to follow, may be more than one
+     */
     public static void main(String[] args) {
         // TODO: Check the arguments
 
         if (args.length < 3) {
-            usage();
+            throw new IllegalArgumentException(
+                "Follow(): Too few arguments.\n" + 
+                "  Usage: java Follow <host> <post> <name1> [name2 name3...]"
+            );
         }
 
         String host = args[0];
-        int port = Integer.parseInt(args[1]);
+        int port = 0;
+
+        try {
+            port = Integer.parseInt(args[1]);
+        }
+        catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                "Follow(): port must be an integer"
+            );
+        }
+
         followNames = new LinkedList<String>();
         connectedNames = new HashSet<String>();
 
@@ -43,8 +71,15 @@ public class Follow {
         try {
             registry = new RegistryProxy(host, port);
         }
-        catch (Exception e) {
+        catch (ConnectException e) {
+            System.err.println("An error occurred: Chances are the microblog went down, and the lease hasn't yet expired."); 
             e.printStackTrace();
+            System.exit(1);
+        }
+        catch (RemoteException e) {
+            throw new IllegalArgumentException(
+                "Microblog(): No Registry Server is running at specified host and port."
+            );
         }
         
 
@@ -60,6 +95,7 @@ public class Follow {
             UnicastRemoteObject.exportObject (registryListener, 0);
         }
         catch (Exception e) {
+            System.err.println("Follow(): An error occured while exporting the registry listener.");
             e.printStackTrace();
         }
 
@@ -76,6 +112,7 @@ public class Follow {
             UnicastRemoteObject.exportObject(blogListener, 0);
         }
         catch (Exception e) {
+            System.err.println("Follow(): An error occured while exporting the blog listener.");
             e.printStackTrace();
         }
         
@@ -86,16 +123,18 @@ public class Follow {
             registry.addEventListener(registryListener, registryFilter);
         }
         catch (Exception e) {
+            System.err.println("Follow(): An error occured while adding the registry listener.");
             e.printStackTrace();
         }
 
-        // Get a proxy for the matching microblog   
+        // Get a proxy for the matching microblog
+        LinkedList<Message> initialMessages = new LinkedList<Message>();
         for (String name : followNames) {
             try {
                 BlogRef blog = (BlogRef)registry.lookup(name);
 
                 for (Message m : blog.getLatestMessages()) {
-                    System.out.println(m);
+                    initialMessages.add(m);
                 }
 
                 Lease lease = blog.addListener(blogListener);
@@ -105,14 +144,24 @@ public class Follow {
             catch (NotBoundException e) {
             }
             catch (RemoteException e) {
+                System.err.println("Follow(): An error occured while adding adding a blog listener.");
                 e.printStackTrace();
             }
+        }
+
+        Collections.sort(initialMessages);
+        for (Message m : initialMessages) {
+            System.out.println(m);
         }
     }
 
 
+    /**
+     * Callback for when a blog connects to the registry
+     *
+     * @param blogName  the name of the blog that has connected
+     */
     private static void listenToBlog( String blogName ) {
-        System.out.println("NEW CONNETION: " + blogName);
         // Check to see if we're supposed to follow, and haven't already seen the connection
         //   If so, print the latest messages and establish the listener
         // If we are following, but the connection was already established...
@@ -132,12 +181,9 @@ public class Follow {
             }
         }
         catch (Exception e) {
+            System.err.println("Follow(): An error occurred in the registryListener callback.");
             e.printStackTrace();
+            System.exit(1);
         }
     }
-
-    public static void usage() {
-        System.out.println("Usage: java Follow <host> <post> <name>");
-    }
-
 }
