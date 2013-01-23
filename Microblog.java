@@ -137,8 +137,8 @@ public class Microblog implements BlogRef {
             Message message = iter.next();
             if (message.getId() == id) {
                 iter.remove();
+                return message;
             }
-            return message;
         }
         
         return null;
